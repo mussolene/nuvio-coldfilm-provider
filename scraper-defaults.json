@@ -1,0 +1,14 @@
+{
+  "name": "$providerName",
+  "description": "Потоки ColdFilm для Nuvio",
+  "version": "0.1.0",
+  "author": "mussolene",
+  "supportedTypes": ["movie", "tv"],
+  "enabled": true,
+  "logo": "",
+  "contentLanguage": ["ru"],
+  "formats": ["mp4"],
+  "limited": false,
+  "disabledPlatforms": [],
+  "supportsExternalPlayer": true
+}

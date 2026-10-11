@@ -1,0 +1,44 @@
+name: Проверка провайдера
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Получить исходный код
+        uses: actions/checkout@v7
+
+      - name: Настроить Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+
+      - name: Выполнить тесты и сборку
+        run: |
+          npm test
+          npm run build
+
+      - name: Проверить воспроизводимость и публичный манифест
+        run: |
+          git diff --exit-code -- dist
+          node - <<'NODE'
+          const fs = require('fs');
+          const manifest = JSON.parse(fs.readFileSync('dist/manifest.json', 'utf8'));
+          if (manifest.scrapers.length !== 1) throw new Error('Ожидался один провайдер');
+          const serialized = JSON.stringify(manifest);
+          if (/127\.0\.0\.1|localhost|0\.0\.0\.0/.test(serialized)) {
+            throw new Error('В публичном манифесте найден локальный адрес');
+          }
+          const file = manifest.scrapers[0].filename;
+          if (!fs.existsSync('dist/' + file)) throw new Error('Файл провайдера отсутствует');
+          NODE

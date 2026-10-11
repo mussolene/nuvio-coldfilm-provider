@@ -1,0 +1,14 @@
+{
+  "name": "coldfilm-nuvio-plugin",
+  "version": "0.2.0",
+  "private": true,
+  "license": "MIT",
+  "author": "mussolene",
+  "description": "Провайдер ColdFilm для Nuvio",
+  "repository": "https://github.com/mussolene/nuvio-coldfilm-provider",
+  "scripts": {
+    "build": "node build.js",
+    "test": "node --test src/coldfilm/index.test.js",
+    "serve": "node server.js"
+  }
+}
