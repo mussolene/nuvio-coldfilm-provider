@@ -28,6 +28,7 @@ function stripTags(value) {
 function normalizeTitle(value) {
   return stripTags(value)
     .toLowerCase()
+    .replace(/ё/g, 'е')
     .replace(/\[[^\]]*]/g, ' ')
     .replace(/[^a-zа-яё0-9]+/gi, ' ')
     .replace(/\s+/g, ' ')
@@ -50,20 +51,22 @@ function parseSearchResults(html) {
   return results;
 }
 
-function chooseSearchResult(results, title, mediaType, season, episode) {
+function chooseSearchResult(results, title, mediaType, season, episode, releaseYear) {
   const wantedTitle = normalizeTitle(title);
   const wantedSeason = Number(season || 0);
   const wantedEpisode = Number(episode || 0);
   const ranked = results.map((item) => {
     const normalized = normalizeTitle(item.title);
-    let score = normalized.startsWith(wantedTitle) ? 100 : 0;
-    if (normalized.includes(wantedTitle)) score += 40;
+    if (!normalized.includes(wantedTitle)) return null;
+    const publicationYear = Number((item.url.match(/\/(\d{4})-\d{2}-\d{2}-\d+(?:$|[?#])/) || [])[1]);
+    if (releaseYear && publicationYear && publicationYear < releaseYear) return null;
+    let score = normalized.startsWith(wantedTitle) ? 140 : 40;
     if (mediaType === 'tv') {
       if (new RegExp('(?:^| )' + wantedSeason + ' сезон(?: |$)', 'i').test(normalized)) score += 30;
       if (new RegExp('(?:^| )' + wantedEpisode + '(?: серия| серии| эпизод)(?: |$)', 'i').test(normalized)) score += 20;
     }
     return { item, score };
-  }).filter((entry) => entry.score > 0);
+  }).filter((entry) => entry !== null);
 
   ranked.sort((a, b) => b.score - a.score);
   return ranked.length ? ranked[0].item : null;
@@ -293,7 +296,7 @@ async function fetchText(url, headers) {
   return response.text();
 }
 
-async function resolveTitle(tmdbId, mediaType) {
+async function resolveMetadata(tmdbId, mediaType) {
   const type = mediaType === 'movie' ? 'movie' : 'tv';
   if (typeof TMDB_API_KEY === 'undefined' || !TMDB_API_KEY) throw new Error('Ключ TMDB недоступен');
   const url = TMDB_API_URL + '/' + type + '/' + encodeURIComponent(tmdbId) +
@@ -301,7 +304,10 @@ async function resolveTitle(tmdbId, mediaType) {
   const response = await fetch(url, { headers: COMMON_HEADERS });
   if (!response.ok) throw new Error('TMDB HTTP ' + response.status);
   const data = await response.json();
-  return String(type === 'movie' ? data.title || '' : data.name || '').trim();
+  return {
+    title: String(type === 'movie' ? data.title || '' : data.name || '').trim(),
+    releaseYear: Number(String(type === 'movie' ? data.release_date || '' : data.first_air_date || '').slice(0, 4))
+  };
 }
 
 async function searchColdFilm(query) {
@@ -316,14 +322,14 @@ async function searchColdFilm(query) {
 
 async function getStreams(tmdbId, mediaType, season, episode) {
   try {
-    const title = await resolveTitle(tmdbId, mediaType);
+    const { title, releaseYear } = await resolveMetadata(tmdbId, mediaType);
     if (!title) return [];
 
     const query = mediaType === 'tv'
       ? title + ' ' + Number(season) + ' сезон ' + Number(episode) + ' серия'
       : title;
     const results = await searchColdFilm(query);
-    const selected = chooseSearchResult(results, title, mediaType, season, episode);
+    const selected = chooseSearchResult(results, title, mediaType, season, episode, releaseYear);
     if (!selected) return [];
 
     const pageHtml = await fetchText(selected.url, { Referer: BASE_URL + '/' });

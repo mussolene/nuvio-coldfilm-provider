@@ -83,3 +83,14 @@ test('собирает 1080p P2P и прямые варианты одной с�
     assert.deepEqual(streams.map((stream) => stream.quality), ['1080p', '720p', '360p']);
     assert.equal(streams[0].url, 'torrent:1ade8a1a581f338e4fce4ce784da3f7d03f81f3a');
 });
+
+
+test('различает одноименные сериалы по году премьеры и букве ё', () => {
+    const results = [
+        { title: 'Темная материя 2 сезон 3 серия', url: 'https://coldfilm.press/news/old/2016-07-15-4981' },
+        { title: 'Тёмная материя 2 сезон 3 серия', url: 'https://coldfilm.press/news/new/2026-09-11-41815' }
+    ];
+    assert.equal(__test.chooseSearchResult(results, 'Темная материя', 'tv', 2, 3, 2024).url, results[1].url);
+    assert.equal(__test.chooseSearchResult(results, 'Темная материя', 'tv', 2, 3, 2015).url, results[0].url);
+    assert.equal(__test.chooseSearchResult(results, 'Другой сериал', 'tv', 2, 3, 2024), null);
+});

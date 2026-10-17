@@ -1,13 +1,13 @@
 {
   "name": "ColdFilm для Nuvio",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Провайдер ColdFilm с P2P 1080p и прямыми MP4-потоками",
   "scrapers": [
     {
       "id": "coldfilm",
       "name": "ColdFilm",
       "description": "Русская озвучка ColdFilm: P2P 1080p и прямые MP4-потоки",
-      "version": "0.2.0",
+      "version": "0.2.1",
       "author": "mussolene",
       "supportedTypes": [
         "movie",
